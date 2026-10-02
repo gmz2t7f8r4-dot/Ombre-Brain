@@ -687,6 +687,13 @@ async def trace_core(
 
         # --- plan 桶：status / content 改变时追加 change_log ---
         content_change_requested = "content" in updates or patch_args_supplied
+        if content_change_requested:
+            from .._common import immutable_raw_content_enabled
+            if immutable_raw_content_enabled():
+                raise ToolInputError(
+                    "原文保护已开启：不能修改或替换记忆正文；请新建一条记忆，"
+                    "元数据仍可单独修改。"
+                )
         is_plan = bucket.get("metadata", {}).get("type") == "plan"
         append_plan_history_in_patch = is_plan and patch_args_supplied
         if is_plan and not patch_args_supplied and (
