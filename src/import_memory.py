@@ -1071,7 +1071,10 @@ class ImportEngine:
             direct_import = bool(
                 prepared_chunks and "direct_item" in prepared_chunks[0]
             )
-            if not direct_import and not self.dehydrator.api_available:
+            immutable_raw = parse_bool(
+                self.config.get("immutable_raw_content", False), default=False
+            )
+            if not direct_import and not immutable_raw and not self.dehydrator.api_available:
                 return self._record_start_error(
                     job_id=job_id,
                     filename=filename,
@@ -1278,7 +1281,12 @@ class ImportEngine:
             return True
 
         # --- LLM extraction ---
-        if items is None:
+        immutable_raw = parse_bool(
+            self.config.get("immutable_raw_content", False), default=False
+        )
+        if items is None and immutable_raw:
+            items = [{"content": content, "name": ""}]
+        elif items is None:
             try:
                 items = await self._extract_memories(content)
                 self.state.data["api_calls"] += 1
