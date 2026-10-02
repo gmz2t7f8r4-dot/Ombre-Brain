@@ -12,8 +12,7 @@
 transport: "stdio"
 
 # --- Public deployment origin / 公网部署来源地址 ---
-# 公网安全模式填写外部 HTTPS origin；不要包含凭merge_threshold: 75
-据、查询参数或片段。
+# 公网安全模式填写外部 HTTPS origin；不要包含凭据、查询参数或片段。
 # Dashboard 也接受完整的 https://example.com/mcp，并会规范化为下面的 origin。
 # OAuth 与 MCP resource 校验共用此值；修改后必须重启并重新完成客户端授权。
 # Set the external HTTPS origin for public-secure deployments. Dashboard also accepts a full
