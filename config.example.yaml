@@ -12,7 +12,8 @@
 transport: "stdio"
 
 # --- Public deployment origin / 公网部署来源地址 ---
-# 公网安全模式填写外部 HTTPS origin；不要包含凭据、查询参数或片段。
+# 公网安全模式填写外部 HTTPS origin；不要包含凭merge_threshold: 75
+据、查询参数或片段。
 # Dashboard 也接受完整的 https://example.com/mcp，并会规范化为下面的 origin。
 # OAuth 与 MCP resource 校验共用此值；修改后必须重启并重新完成客户端授权。
 # Set the external HTTPS origin for public-secure deployments. Dashboard also accepts a full
@@ -104,6 +105,12 @@ storage:
 # this value (0-100), merge instead of creating a new one
 # 存新记忆时，如果与已有桶的相似度超过此值（0-100），则合并而非新建
 merge_threshold: 75
+
+# Keep bucket Markdown as immutable canonical raw memory.
+# Similar new events are stored separately; model summaries remain derived side data only.
+immutable_raw_content: false
+
+
 
 # --- Dehydration API / 脱水压缩 API 配置 ---
 # Uses a cheap LLM for intelligent compression. API is required; if the
