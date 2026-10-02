@@ -109,8 +109,6 @@ merge_threshold: 75
 # Similar new events are stored separately; model summaries remain derived side data only.
 immutable_raw_content: false
 
-
-
 # --- Dehydration API / 脱水压缩 API 配置 ---
 # Uses a cheap LLM for intelligent compression. API is required; if the
 # configured key/endpoint is unavailable, hold/grow will raise an explicit
