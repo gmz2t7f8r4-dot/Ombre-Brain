@@ -420,6 +420,8 @@ def load_config(config_path: Optional[str] = None) -> dict:
         "mcp_token": "",
         "buckets_dir": os.path.join(project_root, "buckets"),
         "merge_threshold": 75,
+        # Markdown bucket bodies remain canonical raw memory when enabled.
+        "immutable_raw_content": False,
         "dehydration": {
             "model": "gemini-2.0-flash",
             "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/",
@@ -562,6 +564,11 @@ def load_config(config_path: Optional[str] = None) -> dict:
     }
     config["transport"] = _transport_aliases.get(_raw_transport, _raw_transport)
     _apply_env_override(config, "OMBRE_BUCKETS_DIR", "buckets_dir")
+    _env_immutable_raw = os.environ.get("OMBRE_IMMUTABLE_RAW_CONTENT", "").strip()
+    if _env_immutable_raw:
+        config["immutable_raw_content"] = parse_bool(
+            _env_immutable_raw, default=config.get("immutable_raw_content", False)
+        )
     env_buckets_dir = os.environ.get("OMBRE_BUCKETS_DIR", "")
 
     # MCP 鉴权开关（布尔，单独处理）—— OMBRE_MCP_REQUIRE_AUTH
