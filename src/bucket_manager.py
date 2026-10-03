@@ -2085,7 +2085,7 @@ class BucketManager:
             ):
                 return {"ok": False, "error": "concurrent_lock", "matches": 0}
 
-            current_content = str(post.content or "")
+            current_content = str(post.content or ""content_changed and str(event_actor or "system").strip().lower() not in {"human", "llm"}
             # ``str.count`` ignores overlapping occurrences ("aa" in "aaa"),
             # which could silently patch the first of two valid match starts.
             # Only 0/1/many matters, so stop at the second start rather than
