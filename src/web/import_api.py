@@ -17,6 +17,7 @@ import os
 import time
 import asyncio
 import math
+import logging
 import threading
 import tempfile
 from contextlib import AsyncExitStack
@@ -27,6 +28,8 @@ from starlette.requests import Request
 from starlette.responses import FileResponse, Response
 
 from . import _shared as sh
+
+logger = logging.getLogger(__name__)
 
 try:
     from utils import normalize_memory_title, parse_bool, sanitize_name  # type: ignore
@@ -1363,6 +1366,22 @@ def register(mcp) -> None:
                 )
                 if not ok:
                     latest = await sh.bucket_mgr.get(bucket_id)
+                    # 仅记录字段名与桶状态，不记录正文或敏感内容，便于诊断
+                    # “update failed” 的真实拒绝原因。
+                    latest_meta = (latest or {}).get("metadata", {})
+                    if not isinstance(latest_meta, dict):
+                        latest_meta = {}
+                    logger.error(
+                        "bucket edit returned false: bucket=%s actor=human "
+                        "update_fields=%s type=%s pinned=%s protected=%s "
+                        "content_requested=%s",
+                        bucket_id,
+                        sorted(updates.keys()),
+                        latest_meta.get("type"),
+                        latest_meta.get("pinned"),
+                        latest_meta.get("protected"),
+                        "content" in updates,
+                    )
                     if _is_terminal_memory_metadata(
                         (latest or {}).get("metadata", {})
                     ):
