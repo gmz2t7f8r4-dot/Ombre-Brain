@@ -5431,7 +5431,7 @@ async function loadBuckets() {
     allBuckets = data;
     if (hadPrevious && data.some(function(b){return b.erasable_test_data && !previousIds.has(b.id);}) && window.ObPet) ObPet.react('test_create');
     var liveIds = new Set(allBuckets.map(function(b) { return b.id; }));
-    selectedBucketIds.forEach(function(id) { if (!liveIds.has(id)) selectedBucketIds.delete(id); });
+    selectedBucketIds.forEach(function(id) { if (!liveIds.has(id)) selectedBucketIds.delete(id); })  // 类型变更由专用生命周期操作处理；正文编辑不应隐式迁移桶。
     updateStats();
     buildFilters();
     // 数据刷新不等于用户切换视图：搜索框里还有查询词就重跑搜索，否则继续应用
