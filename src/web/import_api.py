@@ -1397,6 +1397,12 @@ def register(mcp) -> None:
                         "updated bucket could not be reloaded", status_code=500
                     )
         except Exception as e:
+            # 仅记录桶 ID、字段名和异常堆栈，不记录正文或其他敏感值。
+            logger.exception(
+                "bucket edit exception: bucket=%s actor=human update_fields=%s",
+                bucket_id,
+                sorted(updates.keys()) if isinstance(updates, dict) else [],
+            )
             return reject(str(e), status_code=500)
 
         after_values = {
