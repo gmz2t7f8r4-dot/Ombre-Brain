@@ -1364,24 +1364,8 @@ def register(mcp) -> None:
                     **lock_precondition,
                     **updates,
                 )
-                if not ok and "content" in updates and len(updates) > 1:
-                    # 正文是原文真源；若组合元数据约束拒绝整次更新，
-                    # 只重试正文，避免正文被无关字段一起判失败。
-                    content_only = {"content": updates["content"]}
-                    ok = await sh.bucket_mgr.update(
-                        bucket_id,
-                        event_actor="human",
-                        **lock_precondition,
-                        **content_only,
-                    )
-                    if ok:
-                        updates = content_only
-                        logger.warning(
-                            "bucket edit metadata skipped after content fallback: bucket=%s",
-                            bucket_id,
-                        )
-                if not ok:
-                    latest = await sh.bucket_mgr.get(bucket_id)
+               if not ok:
+    latest = await sh.bucket_mgr.get(bucket_id)
                     # 仅记录字段名与桶状态，不记录正文或敏感内容，便于诊断
                     # “update failed” 的真实拒绝原因。
                     latest_meta = (latest or {}).get("metadata", {})
