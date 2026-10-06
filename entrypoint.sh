@@ -250,8 +250,8 @@ _bootstrap_code() {
         # Treat the rollback as a persisted override of this image baseline. Without
         # refreshing these markers, a missing/old fingerprint marker would immediately
         # reseed the same failed image and undo the rollback.
-        _write_marker "$CODE_DIR/.seeded_image_version" "$IMG_VER" || true
-        [ -z "$IMG_FP" ] || _write_marker "$CODE_DIR/.seeded_image_fingerprint" "$IMG_FP" || true
+        # rollback keeps the image marker unchanged
+        # rollback keeps the image fingerprint unchanged
         SEEDED_VER="$IMG_VER"
         [ -z "$IMG_FP" ] || SEEDED_FP="$IMG_FP"
     fi
