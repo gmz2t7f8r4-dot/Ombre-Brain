@@ -105,6 +105,10 @@ storage:
 # 存新记忆时，如果与已有桶的相似度超过此值（0-100），则合并而非新建
 merge_threshold: 75
 
+# Keep bucket Markdown as immutable canonical raw memory.
+# Similar new events are stored separately; model summaries remain derived side data only.
+immutable_raw_content: false
+
 # --- Dehydration API / 脱水压缩 API 配置 ---
 # Uses a cheap LLM for intelligent compression. API is required; if the
 # configured key/endpoint is unavailable, hold/grow will raise an explicit

@@ -31,7 +31,7 @@ from errors import ToolInputError
 import asyncio
 import uuid
 
-from utils import normalize_memory_title
+from utils import normalize_memory_title, parse_bool
 
 try:
     from errors import llm_step_failed_error, safe_error_detail
@@ -84,6 +84,9 @@ async def grow_core(content: str, test_data: bool = False) -> str:
     # items 那条路早就有完整机制（原文存一份 + 每桶行号区间指回），
     # 这里补的是同一套，不新造第二种存法。
     source_ref = ""
+    immutable_raw = parse_bool(
+        (rt.config or {}).get("immutable_raw_content", False), default=False
+    ) if isinstance(rt.config, dict) else False
     line_count = len(content.splitlines()) or 1
     try:
         from ombrebrain.storage.source_store import normalize_source_ranges
@@ -116,6 +119,19 @@ async def grow_core(content: str, test_data: bool = False) -> str:
             return {"line": f"⚠️{item.get('name', '?')}（{size_err}）"}
         try:
             why_remembered = item.get("why_remembered") or ""
+            item_ranges = item.get("_source_ranges") or []
+            if immutable_raw:
+                if not source_ref or not item_ranges:
+                    return {"line": f"⚠️{item.get('name', '?')}（缺少原文范围，未写入）"}
+                from ombrebrain.storage.source_store import SourceStore
+                stored_content = SourceStore.select_ranges(content, item_ranges)
+                if not stored_content.strip():
+                    return {"line": f"⚠️{item.get('name', '?')}（原文范围为空，未写入）"}
+            else:
+                stored_content = item["content"]
+            stored_size_err = check_content_size(stored_content)
+            if stored_size_err:
+                return {"line": f"⚠️{item.get('name', '?')}（{stored_size_err}）"}
             # 把这条桶连回它自己那几行原话。行号是 LLM 报的，原话由系统去取——
             # 它碰不到原文，也就没法在这一层压缩或改写。
             source_refs = None
@@ -124,7 +140,7 @@ async def grow_core(content: str, test_data: bool = False) -> str:
                     {"ref": source_ref, "ranges": item.get("_source_ranges") or []}
                 ]
             result_name, is_merged, embed_warn = await merge_or_create(
-                content=item["content"],
+                content=stored_content,
                 tags=item.get("tags") or [],
                 importance=item.get("importance") or 5,
                 domain=item.get("domain") or ["未分类"],
@@ -152,7 +168,7 @@ async def grow_core(content: str, test_data: bool = False) -> str:
             ),
             "merged": is_merged,
             "embed_warn": embed_warn,
-            "dup_check": None if is_merged else (result_name, item["content"]),
+            "dup_check": None if is_merged else (result_name, stored_content),
         }
 
     outcomes = await asyncio.gather(*(_process_item(item) for item in items))
@@ -218,6 +234,9 @@ async def grow_items(items: list, source_content: str = "", test_data: bool = Fa
         raise ToolInputError("source_ranges 需要同时提供 content 作为原文，未创建任何桶。")
 
     source_ref = ""
+    immutable_raw = parse_bool(
+        (rt.config or {}).get("immutable_raw_content", False), default=False
+    ) if isinstance(rt.config, dict) else False
     if source_content and source_content.strip():
         try:
             from ombrebrain.storage.source_store import normalize_source_ranges
@@ -241,6 +260,14 @@ async def grow_items(items: list, source_content: str = "", test_data: bool = Fa
         if size_err:
             return {"line": f"⚠️（{size_err}）"}
         try:
+            if immutable_raw and source_ref:
+                ranges = item.get("_source_ranges") or []
+                if not ranges:
+                    return {"line": "⚠️（缺少原文范围，未写入）"}
+                from ombrebrain.storage.source_store import SourceStore
+                content_str = SourceStore.select_ranges(source_content, ranges)
+                if not content_str.strip():
+                    return {"line": "⚠️（原文范围为空，未写入）"}
             # 只打标，不改写正文；打标失败（如 API key 未配置）不应丢正文——
             # 落回本地中性元数据，与 hold 的降级行为保持一致（见 tools/hold/core.py）。
             needs_analysis = (

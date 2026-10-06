@@ -96,6 +96,20 @@ _PLAN_LLM_CONFIDENCE_MIN = 0.7         # LLM judgement.confidence 下限
 _SAME_EVENT_CONFIDENCE_MIN = 0.85      # 自动合并必须高置信，疑似时新建
 _PLAN_FALLBACK_CAP = 10                # 无向量时直接送 LLM 的 plan 上限（防止过多 LLM 调用）
 
+
+def immutable_raw_content_enabled() -> bool:
+    """Whether existing bucket Markdown is protected from merge rewrites."""
+    config = rt.config if isinstance(rt.config, dict) else {}
+    nested = config.get("memory")
+    if not isinstance(nested, dict):
+        nested = {}
+    value = config.get(
+        "immutable_raw_content",
+        nested.get("immutable_raw_content", False),
+    )
+    return parse_bool(value, default=False)
+
+
 # --- 字段截断长度（下游存储 / 日志可读性）---
 _RESOLUTION_REASON_MAX = 200           # 写入桶 frontmatter 的理由上限
 _LOG_REASON_PREVIEW = 60               # 日志里预览的理由长度
@@ -915,11 +929,19 @@ async def _merge_or_create_inner(
                 exact_storage_match = True
 
     merge_threshold = rt.config.get("merge_threshold") or 75
+    if immutable_raw_content_enabled() and existing and not exact_storage_match:
+        rt.logger.info(
+            "op=merge_or_create phase=branch branch=immutable_separate "
+            "reason=raw_content_immutable"
+        )
+        existing = []
     if (
         not test_data
         and existing
         and existing[0].get("score", 0) > merge_threshold
     ):
+        if immutable_raw_content_enabled() and exact_storage_match:
+            return str(existing[0].get("id") or ""), True, ""
         candidate_id = str(existing[0].get("id") or "").strip()
         merge_key = hashlib.sha256(
             candidate_id.encode("utf-8", errors="replace")

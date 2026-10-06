@@ -10010,8 +10010,9 @@ async function bucketSaveEdit(bid) {
   if (titleEl && titleEl.dataset.dirty === '1') body.title = titleEl.value;
   // i/self、archived 及未来特殊类型由专用生命周期维护；不要把浏览器
   // select 的默认首项 dynamic 写回。普通类型仍允许沿用现有编辑入口。
-  if (typeEl && !typeEl.disabled) body.type = typeEl.value;
-  if (weightEl) body.weight = parseFloat(weightEl.value) / 100;
+  // 正文/普通元数据编辑不应隐式触发桶类型迁移；类型变更由专用生命周期操作处理。
+  // weight 仅适用于 plan 桶；普通桶不提交该字段。
+  if (weightEl && typeEl && typeEl.value === 'plan') body.weight = parseFloat(weightEl.value) / 100;
   // 内容只在非空时带上，避免误清空
   if (newContent && newContent.trim()) body.content = newContent;
   const msg = document.getElementById('edit-msg');

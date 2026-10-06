@@ -2053,6 +2053,13 @@ class BucketManager:
         replacement = str(new_str)
         if not old_text:
             return {"ok": False, "error": "empty_old_str", "matches": 0}
+        if parse_bool(self.config.get("immutable_raw_content", False), default=False):
+            return {
+                "ok": False,
+                "error": "raw_content_immutable",
+                "matches": 0,
+                "message": "原文保护已开启，不能修改记忆正文。",
+            }
         if "content" in kwargs:
             return {"ok": False, "error": "content_conflict", "matches": 0}
 
@@ -2078,7 +2085,7 @@ class BucketManager:
             ):
                 return {"ok": False, "error": "concurrent_lock", "matches": 0}
 
-            current_content = str(post.content or "")
+            current_content = str(post.content or ""content_changed and str(event_actor or "system").strip().lower() not in {"human", "llm"}
             # ``str.count`` ignores overlapping occurrences ("aa" in "aaa"),
             # which could silently patch the first of two valid match starts.
             # Only 0/1/many matters, so stop at the second start rather than
@@ -2183,6 +2190,12 @@ class BucketManager:
         同步刷新 last_active 并累加 activation_count，语义与 touch() 一致。
         """
         content_changed = "content" in kwargs
+        if content_changed and parse_bool(
+            self.config.get("immutable_raw_content", False), default=False
+        ):
+            # Metadata and lifecycle updates remain available; canonical raw
+            # Markdown is creation-only while this policy is enabled.
+            return False
         meaning_changed = "meaning" in kwargs or "meaning_append" in kwargs
         derived_state: dict[str, Any] = {}
         async with self._bucket_turn(bucket_id):
@@ -4157,3 +4170,5 @@ class BucketManager:
                 f"Failed to load bucket file / 加载桶文件失败: {file_path}: {e}"
             )
             return None
+
+                                  
