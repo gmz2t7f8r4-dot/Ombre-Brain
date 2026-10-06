@@ -1364,8 +1364,8 @@ def register(mcp) -> None:
                     **lock_precondition,
                     **updates,
                 )
-               if not ok:
-    latest = await sh.bucket_mgr.get(bucket_id)
+                if not ok:
+                    latest = await sh.bucket_mgr.get(bucket_id)
                     # 仅记录字段名与桶状态，不记录正文或敏感内容，便于诊断
                     # “update failed” 的真实拒绝原因。
                     latest_meta = (latest or {}).get("metadata", {})
